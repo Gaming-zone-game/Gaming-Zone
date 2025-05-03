@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="monetag" content="0b252fd751f0ad476eafc230b5e66398">
+  <meta charset="UTF-8">
+  <title>Tic Tac Toe</title>
+  <style>
+   /* Default styles for all screen sizes (mobile first) */
+body {
+  font-family: 'Arial', sans-serif;
+  background-color: black;
+  background-image: url('https://m.media-amazon.com/images/I/71V21L1U9CL.jpg');
+  background-size: cover;
+  background-position: center;
+  color: white;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+
+h1 {
+  color: #fff;
+  font-size: 50px;  /* Smaller font for mobile */
+  margin-top: 20px;
+}
+
+#game-mode {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 100px;
+  margin-top: 200px;
+}
+
+button {
+  padding: 12px 24px;
+  font-size: 16px;
+  border: none;
+  background-color: #4CAF50;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 80%; /* Makes buttons responsive on mobile */
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+#board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* Flexible grid with equal columns */
+  grid-gap: 10px;
+  margin: 50px auto;
+  width: 90%;
+  max-width: 400px; /* Maximum width for the board */
+  justify-content: center;
+  align-items: center;
+}
+
+.cell {
+  width: 100%;
+  height: 100px;
+  font-size: 40px; /* Smaller font size for mobile */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 2px solid #333;
+  position: relative;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+}
+
+.cell:nth-child(odd) { background-color: #008011; }
+.cell:nth-child(even) { background-color: #00ccff; }
+
+.cell.win {
+  background-color: #e0ffe0;
+}
+
+.cell.big-x {
+  font-size: 70px;
+  color: red;
+}
+
+.cell.big-o {
+  font-size: 70px;
+  color: blue;
+}
+
+#status {
+  margin: 20px;
+  font-size: 24px; /* Status text for mobile */
+  min-height: 60px;
+  color: #fff;
+}
+
+#retryButton, #backButton {
+  margin-top: 20px;
+  padding: 12px 20px;
+  font-size: 18px;
+  cursor: pointer;
+  background-color: #f44336;
+  border: none;
+  border-radius: 8px;
+  color: white;
+}
+
+#retryButton:hover, #backButton:hover {
+  background-color: #d32f2f;
+}
+
+/* Desktop (larger screen) adjustments */
+@media (min-width: 768px) {
+  h1 {
+    font-size: 36px;  /* Larger title for desktop */
+    margin-top: 30px;
+  }
+
+  #game-mode {
+    gap: 15px;
+  }
+
+  button {
+    width: 300px;  /* Fixed width for buttons on desktop */
+    font-size: 20px;
+  }
+
+  #board {
+    grid-template-columns: repeat(3, 120px); /* Larger cells for desktop */
+    grid-gap: 20px;
+    width: 400px;  /* Fixed width for the board */
+  }
+
+  .cell {
+    height: 120px;
+    font-size: 60px; /* Larger font size for X and O */
+  }
+
+  #status {
+    font-size: 30px; /* Larger status text for desktop */
+  }
+
+  #retryButton, #backButton {
+    font-size: 20px;
+    padding: 14px 24px;
+  }
+}
+
+  </style>
+</head>
+<body>
+
+  <h1>Tic Tac Toe</h1>
+
+  <div id="game-mode">
+    <button onclick="startGame('easy')">Easy 😊</button>
+    <button onclick="startGame('medium')">Medium 😐</button>
+    <button onclick="startGame('hard')">Hard 😈</button>
+    <button onclick="startGame('player')">2 Player Game 👥</button>
+  </div>
+
+  <div id="board"></div>
+  <div id="status"></div>
+  <button id="retryButton" onclick="restartGame()" style="display:none;">Noob Retry</button>
+  <button id="backButton" onclick="goBackToGameMode()" style="display:none;">Back to Game Mode</button>
+
+  <script>
+    const board = document.getElementById('board');
+    const statusText = document.getElementById('status');
+    const retryButton = document.getElementById('retryButton');
+    const backButton = document.getElementById('backButton');
+    let cells = [];
+    let currentPlayer = 'X';
+    let gameActive = true;
+    let gameMode = '';
+    let computerSymbol = 'O';
+
+    function startGame(mode) {
+      gameMode = mode;
+      cells = [];
+      board.innerHTML = '';
+      currentPlayer = 'X';
+      gameActive = true;
+      createBoard();
+      document.getElementById('game-mode').style.display = 'none';
+      statusText.textContent = `Player ${currentPlayer}'s turn`;
+
+      backButton.style.display = 'none';
+      retryButton.style.display = 'none';
+
+      if (gameMode !== 'player' && currentPlayer === 'X') {
+        setTimeout(computerMove, 500);
+      }
+    }
+
+    function createBoard() {
+      for (let i = 0; i < 9; i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.addEventListener('click', () => makeMove(cell, i));
+        board.appendChild(cell);
+        cells.push('');
+      }
+    }
+
+    function makeMove(cell, index) {
+      if (cells[index] === '' && gameActive) {
+        cells[index] = currentPlayer;
+        cell.textContent = currentPlayer;
+        cell.style.color = currentPlayer === 'X' ? 'red' : 'blue';
+        if (checkWinner()) {
+          if (currentPlayer === 'X') {
+            statusText.innerHTML = `<span style="font-size: 50px; color: red;">X WINS! 🏆</span>`;
+            retryButton.textContent = 'Pro Player Retry';
+          } else {
+            statusText.innerHTML = `<span style="font-size: 50px; color: blue;">O WINS! 🏆</span>`;
+            retryButton.textContent = 'Noob Retry';
+          }
+          gameActive = false;
+          retryButton.style.display = 'inline-block';
+          backButton.style.display = 'inline-block';
+        } else if (cells.every(cell => cell !== '')) {
+          statusText.innerHTML = `<span style="font-size: 40px;">It's a draw! 🤝</span>`;
+          gameActive = false;
+          retryButton.style.display = 'inline-block';
+          backButton.style.display = 'inline-block';
+        } else {
+          currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+          statusText.textContent = `Player ${currentPlayer}'s turn`;
+
+          if (gameMode !== 'player' && currentPlayer === 'O' && gameActive) {
+            setTimeout(computerMove, 500);
+          }
+        }
+      }
+    }
+
+    function checkWinner() {
+      const winPatterns = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6]
+      ];
+      for (let pattern of winPatterns) {
+        const [a, b, c] = pattern;
+        if (cells[a] && cells[a] === cells[b] && cells[a] === cells[c]) {
+          highlightWinningCells(pattern, cells[a]);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function highlightWinningCells(pattern, winner) {
+      const allCells = board.querySelectorAll('.cell');
+      pattern.forEach(index => {
+        allCells[index].classList.add('win');
+        if (winner === 'X') {
+          allCells[index].classList.add('big-x');
+        } else if (winner === 'O') {
+          allCells[index].classList.add('big-o');
+        }
+      });
+    }
+
+    function computerMove() {
+      let move;
+      if (gameMode === 'easy') {
+        move = getRandomMove();
+      } else if (gameMode === 'medium') {
+        move = getMediumMove();
+      } else if (gameMode === 'hard') {
+        move = getBestMove();
+      }
+
+      if (move !== undefined) {
+        cells[move] = computerSymbol;
+        const cell = board.querySelectorAll('.cell')[move];
+        cell.textContent = computerSymbol;
+        cell.style.color = 'blue';
+        if (checkWinner()) {
+          statusText.innerHTML = `<span style="font-size: 50px; color: blue;">O WINS! 🏆</span>`;
+          gameActive = false;
+          retryButton.textContent = 'Noob Retry';
+          retryButton.style.display = 'inline-block';
+          backButton.style.display = 'inline-block';
+        } else {
+          currentPlayer = 'X';
+          statusText.textContent = `Player ${currentPlayer}'s turn`;
+        }
+      }
+    }
+
+    function getMediumMove() {
+      const availableMoves = cells.map((cell, index) => (cell === '') ? index : -1).filter(index => index !== -1);
+      let move = availableMoves.find(index => canWin(index, 'O'));
+      if (move !== undefined) return move;
+      move = availableMoves.find(index => canWin(index, 'X'));
+      if (move !== undefined) return move;
+      return availableMoves[Math.floor(Math.random() * availableMoves.length)];
+    }
+
+    function canWin(index, player) {
+      const tempCells = [...cells];
+      tempCells[index] = player;
+      return checkWinner(tempCells);
+    }
+
+    function getRandomMove() {
+      const availableMoves = cells.map((cell, index) => (cell === '') ? index : -1).filter(index => index !== -1);
+      return availableMoves[Math.floor(Math.random() * availableMoves.length)];
+    }
+
+    function getBestMove() {
+      return getRandomMove(); // placeholder
+    }
+
+    function restartGame() {
+      cells = [];
+      board.innerHTML = '';
+      currentPlayer = 'X';
+      gameActive = true;
+      statusText.textContent = `Player ${currentPlayer}'s turn`;
+      createBoard();
+      retryButton.style.display = 'none';
+      backButton.style.display = 'none';
+    }
+
+    function goBackToGameMode() {
+      document.getElementById('game-mode').style.display = 'flex';
+      retryButton.style.display = 'none';
+      backButton.style.display = 'none';
+      statusText.textContent = '';
+      cells = [];
+      board.innerHTML = '';
+    }
+  </script>
+</body>
+</html>
